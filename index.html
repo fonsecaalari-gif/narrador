@@ -156,16 +156,18 @@
   <!-- 1. Servidor -->
   <section id="sec-servidor">
     <h2><span class="num">1</span> Servidor <span id="srv-chip" class="chip">não configurado</span></h2>
-    <p class="hint">O endereço do seu Space no Hugging Face, no formato <b>usuario/nome-do-space</b>. Você só precisa preencher isto uma vez.</p>
+    <p class="hint">O motor de voz roda no Google Colab (grátis). Abra o Colab, clique em <b>Ambiente de execução → Executar tudo</b> e, em uns 5 minutos, clique no link que aparecer lá. Ele volta para esta página já conectado.</p>
     <div class="row">
-      <input id="srv-space" class="grow" type="text" placeholder="ex.: larissa/narrador" autocomplete="off" spellcheck="false">
+      <a class="btn" id="colab-link" href="https://colab.research.google.com/github/fonsecaalari-gif/narrador/blob/main/Narrador_servidor.ipynb" target="_blank" rel="noopener">Abrir o servidor no Colab ↗</a>
+    </div>
+    <label for="srv-space">Ou cole o link do servidor</label>
+    <div class="row">
+      <input id="srv-space" class="grow" type="text" placeholder="https://xxxxxxxx.gradio.live" autocomplete="off" spellcheck="false">
       <button id="srv-test">Conectar</button>
     </div>
-    <details id="srv-adv">
-      <summary>Space privado? (opcional)</summary>
-      <label for="srv-token">Token do Hugging Face (só leitura)</label>
+    <details id="srv-adv" hidden>
+      <summary>Token (opcional)</summary>
       <input id="srv-token" type="password" placeholder="hf_..." autocomplete="off">
-      <p class="hint">Só é necessário se o seu Space estiver como privado. O token fica salvo apenas neste navegador.</p>
     </details>
     <div id="srv-msg" class="msg"></div>
   </section>
@@ -398,6 +400,15 @@
         acordou = true;
         try { fetch(srv.base, { mode: "no-cors" }).catch(() => {}); } catch (e) {}
       }
+      if (!srv.spaceId) {
+        if (Date.now() - inicio > 15000) {
+          setChip("desligado", "err");
+          throw new Error("O servidor não respondeu. Abra o Colab e clique em Executar tudo; o link muda cada vez que o Colab liga, então use o link novo que aparecer lá.");
+        }
+        onStatus("Conectando ao servidor…");
+        await sleep(3000);
+        continue;
+      }
       const min = Math.floor((Date.now() - inicio) / 60000);
       const fase = stage === "BUILDING" || stage === "RUNNING_BUILDING" ? "Instalando o servidor (só demora assim na primeira vez)"
                  : stage === "SLEEPING" ? "Acordando o servidor, que dorme quando fica uns dias sem uso"
@@ -477,21 +488,35 @@
 
   $("srv-space").value = ls.get("narrador.space");
   $("srv-token").value = ls.get("narrador.token");
-  if ($("srv-token").value) $("srv-adv").open = true;
+  if ($("srv-token").value) { $("srv-adv").hidden = false; $("srv-adv").open = true; }
+
+  // Link vindo do Colab: ?servidor=https://xxxx.gradio.live
+  let veioDoColab = false;
+  try {
+    const q = new URLSearchParams(location.search).get("servidor");
+    if (q) {
+      $("srv-space").value = q;
+      veioDoColab = true;
+      history.replaceState(null, "", location.pathname);
+    }
+  } catch (e) {}
   if (carregarConfigServidor()) setChip("configurado");
 
-  $("srv-test").addEventListener("click", async () => {
+  $("srv-test").addEventListener("click", conectar);
+  if (veioDoColab) conectar();
+
+  async function conectar() {
     const msg = $("srv-msg");
     ls.set("narrador.space", $("srv-space").value.trim());
     ls.set("narrador.token", $("srv-token").value.trim());
-    if (!carregarConfigServidor()) { setMsg(msg, "Escreva o endereço no formato usuario/nome-do-space.", "err"); return; }
+    if (!carregarConfigServidor()) { setMsg(msg, "Cole o link que aparece no Colab (termina em .gradio.live).", "err"); return; }
     $("srv-test").disabled = true;
     try {
       await garantirServidor((t) => setMsg(msg, t));
       setMsg(msg, "Servidor conectado e pronto.", "ok");
     } catch (e) { setMsg(msg, e.message, "err"); }
     finally { $("srv-test").disabled = false; }
-  });
+  }
 
   // ------------------------------------------------------------ vozes
   let vozes = [];
