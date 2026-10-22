@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Narrador com a sua voz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f1e7;
+    --paper: #fffdf8;
+    --ink: #2a2118;
+    --muted: #75685a;
+    --line: #e4d9c6;
+    --accent: #b4442b;
+    --accent-ink: #ffffff;
+    --accent-soft: #f6e1d8;
+    --ok: #2f7a4b;
+    --ok-soft: #dcefe2;
+    --warn: #9a6a00;
+    --warn-soft: #f7ebcc;
+    --shadow: 0 1px 2px rgba(60, 40, 20, .06), 0 6px 20px rgba(60, 40, 20, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1b1713;
+      --paper: #241f1a;
+      --ink: #f1e9dc;
+      --muted: #b0a392;
+      --line: #3a322a;
+      --accent: #e0714f;
+      --accent-ink: #1b1713;
+      --accent-soft: #3d2820;
+      --ok: #7fcf9b;
+      --ok-soft: #1f3327;
+      --warn: #e7bd5a;
+      --warn-soft: #3a3020;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 Inter, system-ui, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 80px; }
+  header h1 {
+    font-family: Fraunces, Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(30px, 6vw, 44px);
+    line-height: 1.1;
+    margin: 0 0 8px;
+  }
+  header p { margin: 0 0 28px; color: var(--muted); }
+  section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 22px 22px 24px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow);
+  }
+  h2 {
+    font-family: Fraunces, Georgia, serif;
+    font-weight: 500;
+    font-size: 22px;
+    margin: 0 0 4px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .num {
+    display: inline-grid; place-items: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    font: 600 14px Inter, sans-serif;
+  }
+  .hint { color: var(--muted); font-size: 14px; margin: 4px 0 14px; }
+  label { display: block; font-weight: 500; font-size: 14px; margin: 14px 0 6px; }
+  input[type=text], input[type=password], textarea {
+    width: 100%; padding: 11px 13px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--bg); color: var(--ink);
+    font: inherit;
+  }
+  textarea { min-height: 220px; resize: vertical; line-height: 1.6; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  button, .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 16px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+    font: 500 15px Inter, sans-serif; cursor: pointer; text-decoration: none;
+  }
+  button:hover:not(:disabled), .btn:hover { border-color: var(--muted); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.primary:hover:not(:disabled) { filter: brightness(1.07); border-color: var(--accent); }
+  button.small, .btn.small { padding: 6px 11px; font-size: 13px; }
+  button.danger { color: var(--accent); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .row > .grow { flex: 1 1 220px; }
+  .chip {
+    font: 500 12px Inter, sans-serif; padding: 3px 10px; border-radius: 99px;
+    background: var(--line); color: var(--muted);
+  }
+  .chip.ok { background: var(--ok-soft); color: var(--ok); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.err { background: var(--accent-soft); color: var(--accent); }
+  .msg { font-size: 14px; margin-top: 10px; min-height: 1.2em; color: var(--muted); }
+  .msg.err { color: var(--accent); }
+  .msg.ok { color: var(--ok); }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+  .read-me {
+    background: var(--bg); border-left: 3px solid var(--accent);
+    padding: 12px 14px; border-radius: 0 10px 10px 0;
+    font-family: Fraunces, Georgia, serif; font-size: 17px; line-height: 1.6;
+    margin: 6px 0 14px;
+  }
+  .rec { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .timer { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 10px; }
+  .item {
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    display: grid; gap: 8px;
+  }
+  .item-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .item-title { font-weight: 600; }
+  .item-meta { color: var(--muted); font-size: 13px; }
+  .item-text { color: var(--muted); font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  audio { width: 100%; height: 40px; }
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px 20px; }
+  .sliders label { display: flex; justify-content: space-between; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .progress { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 12px; display: none; }
+  .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+  .progress.indeterminate > div { width: 30%; animation: slide 1.4s infinite ease-in-out; }
+  @keyframes slide { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+  .empty { color: var(--muted); font-size: 14px; padding: 12px 0 0; }
+  .counter { font-size: 13px; color: var(--muted); text-align: right; margin-top: 4px; }
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 28px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Narrador com a sua voz</h1>
+    <p>Grave a sua voz uma vez, cole uma história e ouça ela narrada por você. A sua voz e todas as narrações ficam guardadas neste navegador.</p>
+  </header>
+
+  <!-- 1. Servidor -->
+  <section id="sec-servidor">
+    <h2><span class="num">1</span> Servidor <span id="srv-chip" class="chip">não configurado</span></h2>
+    <p class="hint">O endereço do seu Space no Hugging Face, no formato <b>usuario/nome-do-space</b>. Você só precisa preencher isto uma vez.</p>
+    <div class="row">
+      <input id="srv-space" class="grow" type="text" placeholder="ex.: larissa/narrador" autocomplete="off" spellcheck="false">
+      <button id="srv-test">Conectar</button>
+    </div>
+    <details id="srv-adv">
+      <summary>Space privado? (opcional)</summary>
+      <label for="srv-token">Token do Hugging Face (só leitura)</label>
+      <input id="srv-token" type="password" placeholder="hf_..." autocomplete="off">
+      <p class="hint">Só é necessário se o seu Space estiver como privado. O token fica salvo apenas neste navegador.</p>
+    </details>
+    <div id="srv-msg" class="msg"></div>
+  </section>
+
+  <!-- 2. Voz -->
+  <section id="sec-voz">
+    <h2><span class="num">2</span> Sua voz <span id="voz-chip" class="chip">nenhuma gravação</span></h2>
+    <p class="hint">Grave de 15 a 30 segundos num lugar silencioso, lendo com o tom que você quer na narração. Duas ou três gravações diferentes deixam a voz mais parecida.</p>
+    <div class="read-me" id="texto-leitura">
+      Era uma vez uma menina que morava numa casa amarela, bem no alto do morro. Todas as manhãs ela abria a janela, respirava fundo e contava às nuvens os sonhos que tinha tido durante a noite. As nuvens, curiosas, paravam um pouquinho para escutar, e só depois seguiam viagem.
+    </div>
+    <div class="rec">
+      <button id="rec-btn" class="primary">● Gravar</button>
+      <span id="rec-status" class="rec" hidden><span class="rec-dot"></span><span class="timer" id="rec-timer">0:00</span></span>
+      <label class="btn" for="voz-file" style="margin:0">Enviar arquivo de áudio</label>
+      <input id="voz-file" type="file" accept="audio/*" multiple hidden>
+    </div>
+    <div id="voz-msg" class="msg"></div>
+    <ul id="voz-list" class="list"></ul>
+  </section>
+
+  <!-- 3. História -->
+  <section id="sec-historia">
+    <h2><span class="num">3</span> Nova história</h2>
+    <label for="hist-titulo">Título</label>
+    <input id="hist-titulo" type="text" placeholder="ex.: A menina e as nuvens">
+    <label for="hist-texto">Texto</label>
+    <textarea id="hist-texto" placeholder="Cole aqui a história. Deixe uma linha em branco entre os parágrafos para criar pausas maiores."></textarea>
+    <div class="counter" id="hist-count">0 caracteres</div>
+    <details>
+      <summary>Ajustes da narração</summary>
+      <div class="sliders">
+        <div><label>Velocidade <span id="v-vel">1.00</span></label><input id="cfg-vel" type="range" min="0.7" max="1.3" step="0.05" value="1"></div>
+        <div><label>Expressividade <span id="v-exp">0.70</span></label><input id="cfg-exp" type="range" min="0.3" max="1" step="0.05" value="0.7"></div>
+        <div><label>Pausa entre frases <span id="v-pf">0.25 s</span></label><input id="cfg-pf" type="range" min="0" max="1" step="0.05" value="0.25"></div>
+        <div><label>Pausa entre parágrafos <span id="v-pp">0.9 s</span></label><input id="cfg-pp" type="range" min="0.2" max="3" step="0.1" value="0.9"></div>
+      </div>
+      <p class="hint">Se a voz sair estranha ou com sons inventados, diminua a expressividade para 0.5.</p>
+    </details>
+    <div class="row" style="margin-top:16px">
+      <button id="narrar-btn" class="primary">Narrar história</button>
+      <button id="cancelar-btn" hidden>Cancelar</button>
+    </div>
+    <div class="progress" id="prog"><div></div></div>
+    <div id="narrar-msg" class="msg"></div>
+  </section>
+
+  <!-- Histórico -->
+  <section id="sec-hist">
+    <h2>Histórico <span id="hist-chip" class="chip">0 narrações</span></h2>
+    <p class="hint">Tudo fica salvo neste navegador. Se limpar os dados do navegador ou usar outro aparelho, o histórico não aparece lá; baixe os áudios que quiser guardar para sempre.</p>
+    <ul id="hist-list" class="list"></ul>
+  </section>
+
+  <footer>Voz gerada com o modelo XTTS v2 (uso pessoal, não comercial). Use apenas a sua voz ou a de quem autorizou.</footer>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  // ------------------------------------------------------------ armazenamento
+  const mem = { vozes: new Map(), historias: new Map() };
+  let dbPromise = null;
+  function openDb() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve) => {
+      try {
+        const req = indexedDB.open("narrador", 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("vozes")) db.createObjectStore("vozes", { keyPath: "id" });
+          if (!db.objectStoreNames.contains("historias")) db.createObjectStore("historias", { keyPath: "id" });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch (e) { resolve(null); }
+    });
+    return dbPromise;
+  }
+  async function dbAll(store) {
+    const db = await openDb();
+    if (!db) return [...mem[store].values()];
+    return new Promise((res) => {
+      try {
+        const r = db.transaction(store).objectStore(store).getAll();
+        r.onsuccess = () => res(r.result || []);
+        r.onerror = () => res([...mem[store].values()]);
+      } catch (e) { res([...mem[store].values()]); }
+    });
+  }
+  async function dbPut(store, obj) {
+    mem[store].set(obj.id, obj);
+    const db = await openDb();
+    if (!db) return;
+    return new Promise((res) => {
+      try {
+        const tx = db.transaction(store, "readwrite");
+        tx.objectStore(store).put(obj);
+        tx.oncomplete = () => res(); tx.onerror = () => res();
+      } catch (e) { res(); }
+    });
+  }
+  async function dbDel(store, id) {
+    mem[store].delete(id);
+    const db = await openDb();
+    if (!db) return;
+    return new Promise((res) => {
+      try {
+        const tx = db.transaction(store, "readwrite");
+        tx.objectStore(store).delete(id);
+        tx.oncomplete = () => res(); tx.onerror = () => res();
+      } catch (e) { res(); }
+    });
+  }
+  const ls = {
+    get(k, d = "") { try { return localStorage.getItem(k) ?? d; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  };
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const fmtDur = (s) => { s = Math.round(s || 0); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+  const fmtData = (t) => new Date(t).toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  function setMsg(el, text, kind = "") { el.textContent = text; el.className = "msg" + (kind ? " " + kind : ""); }
+  function slug(s) {
+    return (s || "narracao").normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase().slice(0, 60) || "narracao";
+  }
+
+  // ------------------------------------------------------------ áudio
+  let actx = null;
+  const getCtx = () => (actx ||= new (window.AudioContext || window.webkitAudioContext)());
+
+  function encodeWav(samples, sr) {
+    const buf = new ArrayBuffer(44 + samples.length * 2);
+    const v = new DataView(buf);
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); w(8, "WAVE");
+    w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    w(36, "data"); v.setUint32(40, samples.length * 2, true);
+    for (let i = 0; i < samples.length; i++) {
+      const x = Math.max(-1, Math.min(1, samples[i]));
+      v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true);
+    }
+    return new Blob([buf], { type: "audio/wav" });
+  }
+
+  // Converte qualquer áudio (webm, mp3, m4a...) em WAV mono 22 kHz, que o servidor lê sem problemas.
+  async function toWav(blob) {
+    const data = await blob.arrayBuffer();
+    const decoded = await new Promise((res, rej) => {
+      const p = getCtx().decodeAudioData(data, res, rej);
+      if (p && p.then) p.then(res, rej);
+    });
+    const sr = 22050;
+    const len = Math.max(1, Math.ceil(decoded.duration * sr));
+    const off = new OfflineAudioContext(1, len, sr);
+    const src = off.createBufferSource();
+    src.buffer = decoded; src.connect(off.destination); src.start();
+    const out = await off.startRendering();
+    return { blob: encodeWav(out.getChannelData(0), sr), duracao: decoded.duration };
+  }
+
+  // ------------------------------------------------------------ servidor
+  const srv = { base: "", spaceId: "", prefix: null, token: "" };
+
+  function parseServidor(txt) {
+    txt = (txt || "").trim().replace(/\/+$/, "");
+    if (!txt) return null;
+    let m = txt.match(/huggingface\.co\/spaces\/([^\/?#]+)\/([^\/?#]+)/i);
+    if (m) txt = `${m[1]}/${m[2]}`;
+    if (/^https?:\/\//i.test(txt)) {
+      const h = txt.match(/^https?:\/\/([a-z0-9-]+)\.hf\.space/i);
+      return { base: txt, spaceId: "" , host: h ? h[1] : "" };
+    }
+    m = txt.match(/^([^\/\s]+)\/([^\/\s]+)$/);
+    if (!m) return null;
+    const sub = `${m[1]}-${m[2]}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    return { base: `https://${sub}.hf.space`, spaceId: `${m[1]}/${m[2]}` };
+  }
+
+  const authHeaders = () => (srv.token ? { Authorization: `Bearer ${srv.token}` } : {});
+
+  function setChip(text, kind) { const c = $("srv-chip"); c.textContent = text; c.className = "chip" + (kind ? " " + kind : ""); }
+
+  async function runtimeStage() {
+    if (!srv.spaceId) return null;
+    try {
+      const r = await fetch(`https://huggingface.co/api/spaces/${srv.spaceId}/runtime`, { headers: authHeaders() });
+      if (!r.ok) return r.status === 404 || r.status === 401 ? "NOT_FOUND" : null;
+      const j = await r.json();
+      return j.stage || null;
+    } catch (e) { return null; }
+  }
+
+  async function tryConfig() {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(`${srv.base}/config`, { headers: authHeaders(), signal: ctrl.signal });
+      clearTimeout(t);
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j;
+    } catch (e) { return null; }
+  }
+
+  // Garante que o servidor está acordado e pronto. onStatus recebe mensagens de andamento.
+  async function garantirServidor(onStatus, cancel) {
+    if (!srv.base) throw new Error("Configure o servidor no passo 1.");
+    const inicio = Date.now();
+    let acordou = false;
+    while (true) {
+      if (cancel && cancel.cancelado) throw new Error("Cancelado.");
+      const cfg = await tryConfig();
+      if (cfg) {
+        srv.prefix = cfg.api_prefix ?? (String(cfg.version || "").startsWith("4") ? "" : "/gradio_api");
+        setChip("conectado", "ok");
+        return;
+      }
+      const stage = await runtimeStage();
+      if (stage === "NOT_FOUND") { setChip("não encontrado", "err"); throw new Error("Não achei esse Space. Confira o endereço (e o token, se ele for privado)."); }
+      if (stage && /ERROR/.test(stage)) { setChip("com erro", "err"); throw new Error(`O Space está com erro (${stage}). Abra a página dele no Hugging Face para ver o que aconteceu.`); }
+      if (stage === "PAUSED" || stage === "STOPPED") { setChip("pausado", "err"); throw new Error("O Space está pausado. Abra a página dele no Hugging Face e clique em Restart."); }
+      if (!acordou) {
+        acordou = true;
+        try { fetch(srv.base, { mode: "no-cors" }).catch(() => {}); } catch (e) {}
+      }
+      const min = Math.floor((Date.now() - inicio) / 60000);
+      const fase = stage === "BUILDING" || stage === "RUNNING_BUILDING" ? "Instalando o servidor (só demora assim na primeira vez)"
+                 : stage === "SLEEPING" ? "Acordando o servidor, que dorme quando fica uns dias sem uso"
+                 : "Esperando o servidor ficar pronto";
+      setChip("acordando…", "warn");
+      onStatus(`${fase}… ${min > 0 ? `(${min} min)` : ""} Pode levar alguns minutos.`);
+      if (Date.now() - inicio > 20 * 60000) { setChip("sem resposta", "err"); throw new Error("O servidor não respondeu em 20 minutos. Abra a página do Space no Hugging Face para ver se há algum erro."); }
+      await sleep(6000);
+    }
+  }
+
+  async function upload(blobs) {
+    const fd = new FormData();
+    blobs.forEach((b, i) => fd.append("files", b, `voz_${i + 1}.wav`));
+    const r = await fetch(`${srv.base}${srv.prefix}/upload`, { method: "POST", body: fd, headers: authHeaders() });
+    if (!r.ok) throw new Error(`Falha ao enviar a sua voz (erro ${r.status}).`);
+    const paths = await r.json();
+    return paths.map((p, i) => ({ path: p, orig_name: `voz_${i + 1}.wav`, meta: { _type: "gradio.FileData" } }));
+  }
+
+  // Chama /narrar e acompanha o andamento pelo fluxo de eventos do servidor.
+  async function chamarNarrar(dados, onStatus, cancel) {
+    const r = await fetch(`${srv.base}${srv.prefix}/call/narrar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ data: dados }),
+    });
+    if (!r.ok) throw new Error(`O servidor recusou o pedido (erro ${r.status}).`);
+    const { event_id } = await r.json();
+    const ctrl = new AbortController();
+    cancel.abort = () => ctrl.abort();
+    const s = await fetch(`${srv.base}${srv.prefix}/call/narrar/${event_id}`, { headers: authHeaders(), signal: ctrl.signal });
+    if (!s.ok || !s.body) throw new Error(`Não consegui acompanhar a narração (erro ${s.status}).`);
+    const reader = s.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+      let idx;
+      while ((idx = buf.indexOf("\n\n")) >= 0) {
+        const bloco = buf.slice(0, idx); buf = buf.slice(idx + 2);
+        let ev = "message"; const linhas = [];
+        for (const l of bloco.split("\n")) {
+          if (l.startsWith("event:")) ev = l.slice(6).trim();
+          else if (l.startsWith("data:")) linhas.push(l.slice(5).trim());
+        }
+        let data = null;
+        try { data = linhas.length ? JSON.parse(linhas.join("\n")) : null; } catch (e) { data = linhas.join("\n"); }
+        if (ev === "generating" && Array.isArray(data) && data[0]) onStatus(String(data[0]));
+        else if (ev === "complete") return data;
+        else if (ev === "error") throw new Error(typeof data === "string" && data ? data : "O servidor encontrou um erro ao narrar. Tente de novo; se continuar, diminua o texto.");
+      }
+    }
+    throw new Error("A conexão com o servidor caiu antes de terminar. Mantenha esta página aberta (e a tela ligada) durante a narração.");
+  }
+
+  async function baixarResultado(saida) {
+    const f = Array.isArray(saida) ? saida[0] : saida;
+    if (!f) throw new Error("O servidor não devolveu o áudio.");
+    let url = f.url || `${srv.base}${srv.prefix}/file=${f.path}`;
+    if (url.startsWith("/")) url = srv.base + url;
+    const r = await fetch(url, { headers: authHeaders() });
+    if (!r.ok) throw new Error(`Não consegui baixar o áudio (erro ${r.status}).`);
+    return await r.blob();
+  }
+
+  function carregarConfigServidor() {
+    const p = parseServidor($("srv-space").value);
+    srv.token = $("srv-token").value.trim();
+    srv.prefix = null;
+    if (!p) { srv.base = ""; srv.spaceId = ""; setChip("não configurado"); return false; }
+    srv.base = p.base; srv.spaceId = p.spaceId;
+    return true;
+  }
+
+  $("srv-space").value = ls.get("narrador.space");
+  $("srv-token").value = ls.get("narrador.token");
+  if ($("srv-token").value) $("srv-adv").open = true;
+  if (carregarConfigServidor()) setChip("configurado");
+
+  $("srv-test").addEventListener("click", async () => {
+    const msg = $("srv-msg");
+    ls.set("narrador.space", $("srv-space").value.trim());
+    ls.set("narrador.token", $("srv-token").value.trim());
+    if (!carregarConfigServidor()) { setMsg(msg, "Escreva o endereço no formato usuario/nome-do-space.", "err"); return; }
+    $("srv-test").disabled = true;
+    try {
+      await garantirServidor((t) => setMsg(msg, t));
+      setMsg(msg, "Servidor conectado e pronto.", "ok");
+    } catch (e) { setMsg(msg, e.message, "err"); }
+    finally { $("srv-test").disabled = false; }
+  });
+
+  // ------------------------------------------------------------ vozes
+  let vozes = [];
+  async function renderVozes() {
+    vozes = (await dbAll("vozes")).sort((a, b) => a.criado - b.criado);
+    const ul = $("voz-list"); ul.innerHTML = "";
+    const chip = $("voz-chip");
+    const total = vozes.reduce((s, v) => s + (v.duracao || 0), 0);
+    if (!vozes.length) { chip.textContent = "nenhuma gravação"; chip.className = "chip"; }
+    else { chip.textContent = `${vozes.length} gravaç${vozes.length > 1 ? "ões" : "ão"} · ${fmtDur(total)}`; chip.className = "chip" + (total >= 10 ? " ok" : " warn"); }
+    vozes.forEach((v) => {
+      const li = document.createElement("li"); li.className = "item";
+      li.innerHTML = `<div class="item-head"><span class="item-title"></span><span class="item-meta"></span></div><audio controls preload="none"></audio><div class="row"><button class="small danger">Apagar</button></div>`;
+      li.querySelector(".item-title").textContent = v.nome;
+      li.querySelector(".item-meta").textContent = `${fmtDur(v.duracao)} · ${fmtData(v.criado)}`;
+      li.querySelector("audio").src = URL.createObjectURL(v.blob);
+      const del = li.querySelector("button");
+      del.addEventListener("click", async () => {
+        if (del.dataset.confirm) { await dbDel("vozes", v.id); renderVozes(); }
+        else { del.dataset.confirm = "1"; del.textContent = "Confirmar"; setTimeout(() => { delete del.dataset.confirm; del.textContent = "Apagar"; }, 3000); }
+      });
+      ul.appendChild(li);
+    });
+    if (vozes.length && total < 10) setMsg($("voz-msg"), "Grave um pouco mais: com menos de 10 segundos a voz fica menos parecida.", "");
+  }
+
+  async function salvarVoz(blob, nome) {
+    const msg = $("voz-msg");
+    try {
+      setMsg(msg, "Processando a gravação…");
+      const { blob: wav, duracao } = await toWav(blob);
+      if (duracao < 3) { setMsg(msg, "A gravação ficou curta demais. Grave pelo menos 10 segundos.", "err"); return; }
+      await dbPut("vozes", { id: uid(), nome, criado: Date.now(), duracao, blob: wav });
+      setMsg(msg, "Gravação salva.", "ok");
+      renderVozes();
+    } catch (e) {
+      setMsg(msg, "Não consegui ler esse áudio. Tente gravar aqui mesmo ou usar outro arquivo (MP3, WAV, M4A).", "err");
+    }
+  }
+
+  let rec = null, recChunks = [], recTimer = null, recStart = 0, recStream = null;
+  $("rec-btn").addEventListener("click", async () => {
+    if (rec && rec.state === "recording") { rec.stop(); return; }
+    const msg = $("voz-msg");
+    try {
+      recStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true } });
+    } catch (e) { setMsg(msg, "Não consegui acessar o microfone. Permita o acesso no navegador e tente de novo.", "err"); return; }
+    try { getCtx().resume(); } catch (e) {}
+    recChunks = [];
+    rec = new MediaRecorder(recStream);
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+    rec.onstop = async () => {
+      clearInterval(recTimer);
+      recStream.getTracks().forEach((t) => t.stop());
+      $("rec-status").hidden = true;
+      $("rec-btn").textContent = "● Gravar";
+      const blob = new Blob(recChunks, { type: rec.mimeType || "audio/webm" });
+      await salvarVoz(blob, `Gravação ${vozes.length + 1}`);
+    };
+    rec.start(250);
+    recStart = Date.now();
+    $("rec-status").hidden = false;
+    $("rec-btn").textContent = "■ Parar";
+    setMsg(msg, "Gravando… leia o texto acima com calma.");
+    recTimer = setInterval(() => {
+      const s = (Date.now() - recStart) / 1000;
+      $("rec-timer").textContent = fmtDur(s);
+      if (s >= 60 && rec.state === "recording") rec.stop();
+    }, 250);
+  });
+
+  $("voz-file").addEventListener("change", async (e) => {
+    for (const f of e.target.files) await salvarVoz(f, f.name.replace(/\.[^.]+$/, ""));
+    e.target.value = "";
+  });
+
+  // ------------------------------------------------------------ história
+  const fmtCfg = {
+    "cfg-vel": ["v-vel", (x) => Number(x).toFixed(2)],
+    "cfg-exp": ["v-exp", (x) => Number(x).toFixed(2)],
+    "cfg-pf": ["v-pf", (x) => `${Number(x).toFixed(2)} s`],
+    "cfg-pp": ["v-pp", (x) => `${Number(x).toFixed(1)} s`],
+  };
+  for (const [id, [out, f]] of Object.entries(fmtCfg)) {
+    const el = $(id);
+    el.value = ls.get("narrador." + id, el.value);
+    const upd = () => { $(out).textContent = f(el.value); ls.set("narrador." + id, el.value); };
+    el.addEventListener("input", upd); upd();
+  }
+  const texto = $("hist-texto"), titulo = $("hist-titulo");
+  texto.value = ls.get("narrador.rascunho.texto");
+  titulo.value = ls.get("narrador.rascunho.titulo");
+  const updCount = () => {
+    const n = texto.value.trim().length;
+    const min = Math.max(1, Math.round(n / 900));
+    $("hist-count").textContent = `${n.toLocaleString("pt-BR")} caracteres${n ? ` · cerca de ${min} min de áudio` : ""}`;
+    ls.set("narrador.rascunho.texto", texto.value);
+  };
+  texto.addEventListener("input", updCount); updCount();
+  titulo.addEventListener("input", () => ls.set("narrador.rascunho.titulo", titulo.value));
+
+  let job = null;
+  const prog = $("prog");
+  function setProg(frac) {
+    prog.style.display = "block";
+    if (frac == null) { prog.classList.add("indeterminate"); prog.firstElementChild.style.width = ""; }
+    else { prog.classList.remove("indeterminate"); prog.firstElementChild.style.width = `${Math.round(frac * 100)}%`; }
+  }
+
+  $("cancelar-btn").addEventListener("click", () => {
+    if (!job) return;
+    job.cancelado = true;
+    if (job.abort) job.abort();
+  });
+
+  $("narrar-btn").addEventListener("click", async () => {
+    const msg = $("narrar-msg");
+    const t = texto.value.trim();
+    if (!srv.base) { setMsg(msg, "Configure o servidor no passo 1 primeiro.", "err"); $("srv-space").focus(); return; }
+    if (!vozes.length) { setMsg(msg, "Grave a sua voz no passo 2 primeiro.", "err"); return; }
+    if (!t) { setMsg(msg, "Cole o texto da história.", "err"); texto.focus(); return; }
+
+    job = { cancelado: false };
+    const meu = job;
+    $("narrar-btn").disabled = true; $("cancelar-btn").hidden = false;
+    let wake = null;
+    try { wake = await navigator.wakeLock?.request("screen"); } catch (e) {}
+    const status = (s) => {
+      setMsg(msg, s);
+      const m = s.match(/trecho (\d+) de (\d+)/);
+      setProg(m ? (Number(m[1]) - 1) / Number(m[2]) : null);
+    };
+    try {
+      setProg(null);
+      status("Conectando ao servidor…");
+      await garantirServidor(status, meu);
+      status("Enviando a sua voz…");
+      const arquivos = await upload(vozes.map((v) => v.blob));
+      status("Na fila do servidor…");
+      const cfg = {
+        velocidade: Number($("cfg-vel").value), expressividade: Number($("cfg-exp").value),
+        pausa_frase: Number($("cfg-pf").value), pausa_paragrafo: Number($("cfg-pp").value),
+      };
+      const res = await chamarNarrar([arquivos, t, cfg.velocidade, cfg.expressividade, cfg.pausa_frase, cfg.pausa_paragrafo], status, meu);
+      status("Baixando o áudio…");
+      const blob = await baixarResultado(res && res[1]);
+      let duracao = 0;
+      try { const b = await getCtx().decodeAudioData(await blob.arrayBuffer()); duracao = b.duration; } catch (e) {}
+      const nome = titulo.value.trim() || t.split(/\s+/).slice(0, 6).join(" ") + "…";
+      await dbPut("historias", { id: uid(), titulo: nome, texto: t, criado: Date.now(), duracao, blob, cfg });
+      setProg(1);
+      setMsg(msg, "Pronto! A narração foi salva no histórico.", "ok");
+      await renderHistorico(true);
+    } catch (e) {
+      if (meu.cancelado) setMsg(msg, "Narração cancelada.");
+      else setMsg(msg, e.message || String(e), "err");
+      prog.style.display = "none";
+    } finally {
+      try { wake && wake.release(); } catch (e) {}
+      $("narrar-btn").disabled = false; $("cancelar-btn").hidden = true; job = null;
+    }
+  });
+
+  // ------------------------------------------------------------ histórico
+  async function renderHistorico(abrirPrimeiro = false) {
+    const itens = (await dbAll("historias")).sort((a, b) => b.criado - a.criado);
+    const ul = $("hist-list"); ul.innerHTML = "";
+    $("hist-chip").textContent = `${itens.length} narraç${itens.length === 1 ? "ão" : "ões"}`;
+    if (!itens.length) { ul.innerHTML = `<li class="empty">As histórias que você narrar vão aparecer aqui.</li>`; return; }
+    itens.forEach((h, i) => {
+      const li = document.createElement("li"); li.className = "item";
+      li.innerHTML = `
+        <div class="item-head"><span class="item-title"></span><span class="item-meta"></span></div>
+        <div class="item-text"></div>
+        <audio controls preload="metadata"></audio>
+        <div class="row">
+          <a class="btn small" download>Baixar</a>
+          <button class="small" data-a="reusar">Usar o texto de novo</button>
+          <button class="small danger" data-a="apagar">Apagar</button>
+        </div>`;
+      li.querySelector(".item-title").textContent = h.titulo;
+      li.querySelector(".item-meta").textContent = `${h.duracao ? fmtDur(h.duracao) + " · " : ""}${fmtData(h.criado)}`;
+      li.querySelector(".item-text").textContent = h.texto;
+      const url = URL.createObjectURL(h.blob);
+      li.querySelector("audio").src = url;
+      const a = li.querySelector("a"); a.href = url; a.download = `${slug(h.titulo)}.wav`;
+      li.querySelector('[data-a="reusar"]').addEventListener("click", () => {
+        texto.value = h.texto; titulo.value = h.titulo; updCount();
+        ls.set("narrador.rascunho.titulo", titulo.value);
+        $("sec-historia").scrollIntoView({ behavior: "smooth" });
+      });
+      const del = li.querySelector('[data-a="apagar"]');
+      del.addEventListener("click", async () => {
+        if (del.dataset.confirm) { await dbDel("historias", h.id); renderHistorico(); }
+        else { del.dataset.confirm = "1"; del.textContent = "Confirmar"; setTimeout(() => { delete del.dataset.confirm; del.textContent = "Apagar"; }, 3000); }
+      });
+      ul.appendChild(li);
+      if (abrirPrimeiro && i === 0) li.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  renderVozes();
+  renderHistorico();
+})();
+</script>
+</body>
+</html>
